@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang = "ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewpoint" content="widt=device-width, initial-scale=1.0">
+        <title>コンプレッサーとノーマライズをいい感じにできるサイト</title>
+    </head>
+    <body>
+        <h1>コンプレッサーとノーマライズをいい感じにできるサイト</h1>
+        <form action="/upload" method="POST" id = "upload-form" enctype="multipart/form-data">
+            <label for="audio-upload">音声ファイルをアップロード</label>
+            <br><br>
+            <input type="file" id="audio-upload" name="file" accept="audio/*" required>
+            <br><br>
+            <button type="submit">アップロード</button>
+        </form>
+
+        <div id="processing-message" style="display:none;">
+            <p>処理中です。しばらくお待ちください。</p>
+        </div>
+
+    </body>
+</html>

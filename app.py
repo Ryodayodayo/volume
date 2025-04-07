@@ -6,7 +6,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
 import soundfile as sf
-
+import os
 
 """
 つけたい機能
@@ -19,6 +19,51 @@ import soundfile as sf
 圧縮した音量を視覚化する
 """
 
+#音声処理関数
+def process_audio(input_path, output_path):
+    #ファイル読み込み
+    fs, data = wavfile.read(input_path)
+
+    #ステレオに対応
+    if data.ndim == 2:
+        data = data[:,0] #左チャンネルのみ取り出す
+
+    #データをfloat32に変換 
+    data = data.astype(np.float32) / 32767.0   
+
+    # コンプレッサー処理
+    threshold = 0.6 * np.max(np.abs(data))
+    ratio = 4
+
+    def compressor_soft_knee(sample, threshold, ratio):
+        abs_sample = np.abs(sample)
+        if abs_sample < threshold:
+            return sample
+        else:
+            # ソフトニー風のカーブ処理
+            compressed = np.sign(sample) * (threshold + (abs_sample - threshold) / ratio)
+            return compressed
+        
+
+    compressed_data = np.array([compressor_soft_knee(s, threshold, ratio) for s in data], dtype=np.float32)
+
+    #peakスケーリングで音割れ防止
+    peak = np.max(np.abs(compressed_data))
+    if peak > 1.0:
+        compressed_data = compressed_data / peak
+
+    #音をノーマライズ
+    max_amp = np.max(np.abs(compressed_data))
+    target_level = 0.7 #ターゲット音量 0.0 ~ 1.0
+    scaling_factor = target_level / max_amp
+    normalized_data = compressed_data * scaling_factor
+
+    #出力
+    sf.write(output_path, normalized_data, samplerate=fs, subtype='FLOAT')
+
+    return output_path
+
+"""
 #wavファイル名を指定
 filename = "青いベンチ ボーカル.wav"
 
@@ -68,7 +113,7 @@ if peak > 1.0:
 
 #音をノーマライズ
 max_amp = np.max(np.abs(compressed_data))
-target_level = 0.7
+target_level = 0.7 #ターゲット音量 0.0 ~ 1.0
 scaling_factor = target_level / max_amp
 normalized_data = compressed_data * scaling_factor
 
@@ -83,6 +128,7 @@ sf.write('compressed_output_float.wav', normalized_data, samplerate=fs, subtype=
 #加工前と後の音声データを表示
 plt.figure(figsize = (12, 6))
 
+#オリジナル
 plt.subplot(2, 1, 1)
 plt.plot(time, data)
 plt.xlabel("Time [s]")
@@ -98,3 +144,5 @@ plt.title("Compressed Waveform")
 
 plt.tight_layout()
 plt.show()
+
+"""
