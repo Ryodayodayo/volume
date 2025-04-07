@@ -5,8 +5,19 @@ import wave
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
+import soundfile as sf
 
 
+"""
+つけたい機能
+
+元の音源の音量からいい感じのスレッショルド、レシオ、kneeの値を自動決定する
+音量レベルから自動でノーマライズする
+
+スレッショルド、レシオ、kneeを画面上で設定(操作性も高くする)
+ノーマライズの値を画面上で設定する
+圧縮した音量を視覚化する
+"""
 
 #wavファイル名を指定
 filename = "青いベンチ ボーカル.wav"
@@ -20,7 +31,7 @@ if data.ndim == 2:
     data = data[:,0] #左チャンネルのみ取り出す
 
 #データをfloat32に変換
-data = data.astype(np.float32) / 32768.0
+data = data.astype(np.float32) / 32767.0
 
 #時間軸の作成
 time = np.linspace(0, len(data) / fs, num = len(data))
@@ -28,8 +39,8 @@ time = np.linspace(0, len(data) / fs, num = len(data))
 
 
 
-# スレッショルドを0.5（最大振幅の50%）に設定
-threshold = 0.3 * np.max(np.abs(data))
+# スレッショルドを0.6（最大振幅の30%）に設定
+threshold = 0.6 * np.max(np.abs(data))
 
 # 圧縮比率を設定（例えば4:1）
 ratio = 4
@@ -45,31 +56,29 @@ def compressor_soft_knee(sample, threshold, ratio):
         return compressed
 
 # 音声データの圧縮
-compressed_data = np.copy(data)
+compressed_data = np.array([compressor_soft_knee(s, threshold, ratio) for s in data], dtype=np.float32)
 
-for i in range(len(data)):
-    if np.abs(data[i]) > threshold:
-        # 圧縮: 音量をレシオに基づいて圧縮
-        compressed_data[i] = compressor_soft_knee(data[1], threshold, ratio)
+# tanhでクリップ代わりに滑らかに圧縮
+#compressed_data = np.tanh(compressed_data)
 
-#int16型に変更
-compressed_data = np.clip(compressed_data, -1.0, 1.0) * 32767
-compressed_data = compressed_data.astype(np.int16)
+#peakスケーリングで音割れ防止
+peak = np.max(np.abs(compressed_data))
+if peak > 1.0:
+    compressed_data = compressed_data / peak
 
-#最大の音量を見つける
-"""max_amplitude = np.max(np.abs(compressed_data))
-
-#正規化するための倍率処理
-target_amplitude = 32767 * 0.5
-scaling_factor =  target_amplitude / max_amplitude
-
-#音量を正規化
+#音をノーマライズ
+max_amp = np.max(np.abs(compressed_data))
+target_level = 0.7
+scaling_factor = target_level / max_amp
 normalized_data = compressed_data * scaling_factor
-#normalized_data = np.tanh(normalized_data / 32767) * 32767 #簡単なリミッター処理"""
-#compressed_data_int16 = np.int16(compressed_data)
 
-#出力
-wavfile.write('compressed_output.wav', fs, compressed_data)
+#float出力
+sf.write('compressed_output_float.wav', normalized_data, samplerate=fs, subtype='FLOAT')
+
+#16int出力
+#compressed_data_int16 = (compressed_data * 32767.0).astype(np.int16)
+#wavfile.write('compressed_output.wav', fs, compressed_data_int16)
+
 
 #加工前と後の音声データを表示
 plt.figure(figsize = (12, 6))
@@ -80,8 +89,9 @@ plt.xlabel("Time [s]")
 plt.ylabel("Amplitude")
 plt.title("Original Waveform")
 
+#float出力
 plt.subplot(2, 1, 2)
-plt.plot(time, compressed_data)
+plt.plot(time, normalized_data)
 plt.xlabel("Time [s]")
 plt.ylabel("Amplitude")
 plt.title("Compressed Waveform")
