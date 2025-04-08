@@ -48,10 +48,10 @@ def upload_file():
 
 
         #app.pyの関数を使って処理
-        process_audio(filepath, output_path, threshold, ratio, target_level)
+        graph_filename = process_audio(filepath, output_path, threshold, ratio, target_level)
 
         # 結果ページへリダイレクト
-        return redirect(url_for('result', filename=output_filename))
+        return redirect(url_for('result', filename=output_filename, graph_filename=graph_filename))
 
         """
         # 処理済みファイルを返す
@@ -61,7 +61,7 @@ def upload_file():
 #結果ページ    
 @app.route('/result/<filename>')
 def result(filename):
-    return render_template('result.html', filename=filename)
+    return render_template('result.html', filename=filename, graph_filename = request.args.get('graph_filename'))
 
 #ファイルダウンロード用のエンドポイント
 @app.route('/download/<filename>')
