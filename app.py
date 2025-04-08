@@ -20,7 +20,7 @@ import os
 """
 
 #音声処理関数
-def process_audio(input_path, output_path):
+def process_audio(input_path, output_path, threshold, ratio, target_level):
     #ファイル読み込み
     fs, data = wavfile.read(input_path)
 
@@ -32,8 +32,8 @@ def process_audio(input_path, output_path):
     data = data.astype(np.float32) / 32767.0   
 
     # コンプレッサー処理
-    threshold = 0.6 * np.max(np.abs(data))
-    ratio = 4
+    #threshold = 0.6 * np.max(np.abs(data))
+    #ratio = 4
 
     def compressor_soft_knee(sample, threshold, ratio):
         abs_sample = np.abs(sample)
@@ -54,7 +54,7 @@ def process_audio(input_path, output_path):
 
     #音をノーマライズ
     max_amp = np.max(np.abs(compressed_data))
-    target_level = 0.7 #ターゲット音量 0.0 ~ 1.0
+    #target_level = 0.7 #ターゲット音量 0.0 ~ 1.0
     scaling_factor = target_level / max_amp
     normalized_data = compressed_data * scaling_factor
 

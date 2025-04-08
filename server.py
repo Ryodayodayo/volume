@@ -41,8 +41,14 @@ def upload_file():
         output_filename = "processed_" + file.filename
         output_path = os.path.join(PROCESSED_FOLDER, output_filename)
 
+        #取得した値を整理
+        threshold = float(request.form['threshold'])
+        ratio = float(request.form['ratio'])
+        target_level = float(request.form['target_level'])
+
+
         #app.pyの関数を使って処理
-        process_audio(filepath, output_path)
+        process_audio(filepath, output_path, threshold, ratio, target_level)
 
         # 結果ページへリダイレクト
         return redirect(url_for('result', filename=output_filename))
