@@ -2,7 +2,10 @@ from flask import Flask, render_template, request, send_from_directory, redirect
 import os
 from app import process_audio
 
+from flask_cors import CORS
+
 app = Flask(__name__)
+CORS(app)
 
 #ファイルを保存するディレクトリ
 UPLOAD_FOLDER = 'uploads'
@@ -30,7 +33,7 @@ def upload_file():
     if file.filename == '':
         return 'ファイルが選択されていません', 400
     
-    if file:
+    else:
         #ファイルを保存
         filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
         file.save(filepath)
