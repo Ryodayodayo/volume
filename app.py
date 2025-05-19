@@ -63,7 +63,7 @@ def process_audio(input_path, output_path, threshold, ratio, target_level):
     #出力
     sf.write(output_path, normalized_data, samplerate=fs, subtype='FLOAT')
  
-    #ファイル名を元にユニークなグラフファイル名を生成
+    #ファイル名を元にグラフファイル名を生成
     base_filename = os.path.basename(input_path)
     graph_filename = f"graph_{os.path.splitext(base_filename)[0]}.png"
 
