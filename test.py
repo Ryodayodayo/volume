@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 from flask_cors import CORS
 import os
 from app import process_audio
+from testApp import process_audio_advanced
 
 app = Flask(__name__)
 CORS(app)  
@@ -23,7 +24,11 @@ def test_upload():
     output_filename = "proceed_" + file.filename
     output_path = os.path.join(TEST_PROCEED_FOLDER, output_filename)
     file_url = f'/test_proceed/{output_filename}'
-    graph_filename = process_audio(filepath, output_path, threshold, ratio, normalize)
+    #graph_filename = process_audio(filepath, output_path, threshold, ratio, normalize)
+    attack=10
+    release=100
+    knee=5
+    graph_filename = process_audio_advanced(filepath, output_path, threshold, ratio,attack, release,knee, normalize)
 
     print(f"[DEBUG] 受け取ったファイル名: {file.filename}")
     print(f"[DEBUG] 受け取った数値: {normalize}")

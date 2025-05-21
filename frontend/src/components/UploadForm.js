@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import './UploadForm.css';
 
 function UploadForm () { 
   const [file, setFile] = useState();
@@ -33,11 +34,11 @@ function UploadForm () {
   };
 
   return (
-    <div>
+    <div className="upload-form">
       <form onSubmit={handleSubmit}>
-        <input type="number" placeholder="ノーマライズ数値入力" onChange={(e) => setNormalize(e.target.value)}/>
-        <input type="number" placeholder="レシオ数値入力" onChange={(e) => setRatio(e.target.value)}/>
-        <input type="number" placeholder="スレッショルド数値入力" onChange={(e) => setThreshold(e.target.value)}/>
+        <input type="number" step="0.01" placeholder="ノーマライズ数値入力" onChange={(e) => setNormalize(e.target.value)}/>
+        <input type="number" step="0.01" placeholder="レシオ数値入力" onChange={(e) => setRatio(e.target.value)}/>
+        <input type="number" step="0.01" placeholder="スレッショルド数値入力" onChange={(e) => setThreshold(e.target.value)}/>
 
 
         <input type="file" accept=".wav" onChange={(e) => setFile(e.target.files[0])}/>
