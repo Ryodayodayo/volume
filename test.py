@@ -19,6 +19,7 @@ def test_upload():
     threshold = float(request.form.get("threshold"))
     attack = float(request.form.get("attack"))
     release = float(request.form.get("release"))
+    knee=5
 
     file = request.files["file"]
     filepath = os.path.join(TEST_FOLDER, file.filename)
@@ -28,15 +29,17 @@ def test_upload():
     file_url = f'/test_proceed/{output_filename}'
     #graph_filename = process_audio(filepath, output_path, threshold, ratio, normalize)
 
-    knee=5
+    
     graph_filename = process_audio_advanced(filepath, output_path, threshold, ratio,attack, release,knee, normalize)
+
+    image_url = f'/static/{graph_filename}'
 
     print(f"[DEBUG] 受け取ったファイル名: {file.filename}")
     print(f"[DEBUG] 受け取った数値: {normalize}")
     print(f"[DEBUG] 受け取った数値: {ratio}")
     print(f"[DEBUG] 受け取った数値: {threshold}")
 
-    return jsonify({ "filename": file.filename, "file_url": file_url})
+    return jsonify({ "filename": file.filename, "file_url": file_url, "image_url" : image_url})
 
 @app.route('/test_proceed/<output_filename>')
 def get_processed_file(output_filename):

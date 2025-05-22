@@ -10,8 +10,10 @@ function UploadForm () {
   const [threshold, setThreshold] = useState(-20);
   const [attack, setAttack] = useState(10);
   const [release, setRelease] = useState(100);
+  const [loading, setLoading] = useState(false);
   
   const navigate = useNavigate();
+
 
   const handleSubmit = async (e) => {
      e.preventDefault();
@@ -24,16 +26,22 @@ function UploadForm () {
      formData.append("release", release)
      formData.append("file", file);
 
+     
+     setLoading(true);
+
      try {
       const response = await axios.post("http://localhost:5000/test", formData);
 
       const filename = response.data.filename;
-      const fileUrl = response.data.file_url
+      const fileUrl = response.data.file_url;
+      const imageUrl = response.data.image_url;
 
-      navigate(`/result/${filename}`, { state: {fileUrl : fileUrl} });
+      navigate(`/result/${filename}`, { state: {fileUrl : fileUrl, imageUrl : imageUrl} });
       
     } catch (err) {
       alert("アップロード失敗");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -59,6 +67,9 @@ function UploadForm () {
         <input type="file" accept=".wav" onChange={(e) => setFile(e.target.files[0])}/>
         <button type="submit">アップロード</button>
       </form>
+
+      {loading && <p>アップロード中...</p>}
+
     </div>
   );
   

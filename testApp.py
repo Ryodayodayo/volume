@@ -96,6 +96,7 @@ def process_audio_advanced(input_path, output_path,
     # ノーマライズ
     normalized = normalize_audio(compressed, normalize_level_db)
 
+
     # 出力
     sf.write(output_path, normalized, samplerate=fs, subtype='FLOAT')
 

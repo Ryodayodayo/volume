@@ -24,3 +24,9 @@
 .upload-form button:hover {
   background-color: #0056b3;
 }
+
+.upload-form p {
+  color: #555;
+  font-weight: bold;
+  margin-top: 1rem;
+}
