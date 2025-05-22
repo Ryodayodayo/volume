@@ -5,9 +5,11 @@ import './UploadForm.css';
 
 function UploadForm () { 
   const [file, setFile] = useState();
-  const [normalize, setNormalize] = useState();
-  const [ratio, setRatio] = useState();
-  const [threshold, setThreshold] = useState();
+  const [normalize, setNormalize] = useState(0.5);
+  const [ratio, setRatio] = useState(4);
+  const [threshold, setThreshold] = useState(-20);
+  const [attack, setAttack] = useState(10);
+  const [release, setRelease] = useState(100);
   
   const navigate = useNavigate();
 
@@ -18,6 +20,8 @@ function UploadForm () {
      formData.append("normalize", normalize)
      formData.append("ratio", ratio)
      formData.append("threshold", threshold)
+     formData.append("attack", attack)
+     formData.append("release", release)
      formData.append("file", file);
 
      try {
@@ -36,11 +40,22 @@ function UploadForm () {
   return (
     <div className="upload-form">
       <form onSubmit={handleSubmit}>
-        <input type="number" step="0.01" placeholder="ノーマライズ数値入力" onChange={(e) => setNormalize(e.target.value)}/>
-        <input type="number" step="0.01" placeholder="レシオ数値入力" onChange={(e) => setRatio(e.target.value)}/>
-        <input type="number" step="0.01" placeholder="スレッショルド数値入力" onChange={(e) => setThreshold(e.target.value)}/>
-
-
+        <label>ノーマライズ : {normalize} 
+          <input type="range" min="0.0" max="1.0" step="0.01" value={normalize??0.5} onChange={(e) => setNormalize(e.target.value)}/>
+        </label>
+        <label>レシオ : {ratio} 
+          <input type="range" min="0.0" max="8.0" step="0.1" value={ratio??4.0} onChange={(e) => setRatio(e.target.value)}/>
+        </label>
+        <label>スレッショルド : {threshold} 
+          <input type="range" min="-50" max="0" step="1.0" value={threshold??0.5} onChange={(e) => setThreshold(e.target.value)}/>
+        </label>        
+        <label>アタック : {attack} 
+          <input type="range" min="0.0" max="20.0" step="0.1" value={attack??10.0} onChange={(e) => setAttack(e.target.value)}/>
+        </label>       
+        <label>リリース : {release} 
+          <input type="range" min="0.0" max="200.0" step="1.0" value={release??50} onChange={(e) => setRelease(e.target.value)}/>
+        </label>                     
+        
         <input type="file" accept=".wav" onChange={(e) => setFile(e.target.files[0])}/>
         <button type="submit">アップロード</button>
       </form>

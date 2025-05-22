@@ -17,6 +17,8 @@ def test_upload():
     normalize = float(request.form.get("normalize"))
     ratio = float(request.form.get("ratio"))
     threshold = float(request.form.get("threshold"))
+    attack = float(request.form.get("attack"))
+    release = float(request.form.get("release"))
 
     file = request.files["file"]
     filepath = os.path.join(TEST_FOLDER, file.filename)
@@ -25,8 +27,7 @@ def test_upload():
     output_path = os.path.join(TEST_PROCEED_FOLDER, output_filename)
     file_url = f'/test_proceed/{output_filename}'
     #graph_filename = process_audio(filepath, output_path, threshold, ratio, normalize)
-    attack=10
-    release=100
+
     knee=5
     graph_filename = process_audio_advanced(filepath, output_path, threshold, ratio,attack, release,knee, normalize)
 
