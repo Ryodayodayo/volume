@@ -9,8 +9,10 @@ function App() {
   return (
     <BrowserRouter>
       <Routes >
-        <Route path="/" element={<UploadForm />} />
-        <Route path="/result/:filename" element={<ResultPage />} />
+        <Route path="/" element={<Layout />}>
+          <Route index element={<UploadForm />} />
+          <Route path="/result/:filename" element={<ResultPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );

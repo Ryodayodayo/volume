@@ -76,6 +76,21 @@ def normalize_audio(data, target_level=-1.0):
         return data
     return data * (target_linear / peak)
 
+def apply_compressor(threshold_db, ratio, attack_ms, release_ms, fs, knee_db):
+    def processor(data):
+        return compressor_envelope(data, threshold_db, ratio, attack_ms, release_ms, fs, knee_db)
+    return processor
+
+def apply_normalize(normalize_level_db):
+    def processor(data):
+        return normalize_audio(data, normalize_level_db)
+    return processor
+
+def apply_processing_chain(data, steps):
+    for step in steps:
+        data = step(data)
+    return data
+
 def process_audio_advanced(input_path, output_path,
                            threshold_db, ratio,
                            attack_ms, release_ms,
@@ -87,18 +102,24 @@ def process_audio_advanced(input_path, output_path,
     if data.ndim == 2:
         data = data[:, 0]
 
-    # float32変換
-    data = data.astype(np.float32) / 32767.0
+    # init16型を正規化(最大値32768で割る)
+    data = data.astype(np.float32) / 32768.0
 
     # コンプレッサー処理
-    compressed = compressor_envelope(data, threshold_db, ratio, attack_ms, release_ms, fs, knee_db)
+    #compressed = compressor_envelope(data, threshold_db, ratio, attack_ms, release_ms, fs, knee_db)
 
     # ノーマライズ
-    normalized = normalize_audio(compressed, normalize_level_db)
+    #normalized = normalize_audio(compressed, normalize_level_db)
 
+    processing_steps = [
+        apply_normalize(normalize_level_db),  # ← ノーマライズ先
+        apply_compressor(threshold_db, ratio, attack_ms, release_ms, fs, knee_db),
+    ]
+
+    processed = apply_processing_chain(data, processing_steps)
 
     # 出力
-    sf.write(output_path, normalized, samplerate=fs, subtype='FLOAT')
+    sf.write(output_path, processed, samplerate=fs, subtype='FLOAT')
 
     # グラフ描画
     base_filename = os.path.basename(input_path)
@@ -117,8 +138,8 @@ def process_audio_advanced(input_path, output_path,
     plt.ylabel("Amplitude")
 
     plt.subplot(2, 1, 2)
-    plt.plot(time, normalized)
-    plt.title("Compressed & Normalized Waveform")
+    plt.plot(time, processed)
+    plt.title("Processed Waveform")
     plt.xlabel("Time [s]")
     plt.ylabel("Amplitude")
 
