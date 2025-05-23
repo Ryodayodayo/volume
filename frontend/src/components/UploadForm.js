@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import './UploadForm.css';
 
 function UploadForm () { 
-  const [file, setFile] = useState();
+  const [vocal, setVocal] = useState();
+  const [audio, setAudio] = useState();
   const [normalize, setNormalize] = useState(0.5);
   const [ratio, setRatio] = useState(4);
   const [threshold, setThreshold] = useState(-20);
@@ -24,7 +25,8 @@ function UploadForm () {
      formData.append("threshold", threshold)
      formData.append("attack", attack)
      formData.append("release", release)
-     formData.append("file", file);
+     formData.append("vocal", vocal);
+     formData.append("audio", audio);
 
      
      setLoading(true);
@@ -32,13 +34,13 @@ function UploadForm () {
      try {
       const response = await axios.post("http://localhost:5000/test", formData);
 
-      const previousFileUrl = response.data.previous_file_url;
+      const vocalPreviousFileUrl = response.data.vocal.previous_file_url;
 
-      const filename = response.data.filename;
-      const fileUrl = response.data.file_url;
-      const imageUrl = response.data.image_url;
+      const vocalFilename = response.data.vocal.filename;
+      const vocalFileUrl = response.data.vocal.file_url;
+      const imageUrl = response.data.vocal.image_url;
 
-      navigate(`/result/${filename}`, { state: {fileUrl : fileUrl, imageUrl : imageUrl, previousFileUrl: previousFileUrl}});
+      navigate(`/result/${vocalFilename}`, { state: {vocalFileUrl : vocalFileUrl, imageUrl : imageUrl, vocalPreviousFileUrl: vocalPreviousFileUrl}});
       
     } catch (err) {
       alert("アップロード失敗");
@@ -65,8 +67,13 @@ function UploadForm () {
         <label>リリース : {release} 
           <input type="range" min="0.0" max="200.0" step="1.0" value={release??50} onChange={(e) => setRelease(e.target.value)}/>
         </label>                     
+        <label>ボーカルデータ
+          <input type="file" accept=".wav" onChange={(e) => setVocal(e.target.files[0])}/>
+        </label>
+        <label>inst音源
+          <input type="file" accept=".wav" onChange={(e) => setAudio(e.target.files[0])}/>
+        </label>
         
-        <input type="file" accept=".wav" onChange={(e) => setFile(e.target.files[0])}/>
         <button type="submit">アップロード</button>
       </form>
 

@@ -21,26 +21,33 @@ def test_upload():
     release = float(request.form.get("release"))
     knee=5
 
-    file = request.files["file"]
-    filepath = os.path.join(TEST_FOLDER, file.filename)
-    file.save(filepath)
-    output_filename = "proceed_" + file.filename
-    output_path = os.path.join(TEST_PROCEED_FOLDER, output_filename)
-    file_url = f'/test_proceed/{output_filename}'
-    previous_file_url = f'/test/{file.filename}'
+    vocal = request.files["vocal"]
+    vocal_filepath = os.path.join(TEST_FOLDER, vocal.filename)
+    vocal.save(vocal_filepath)
+    output_vocal_filename = "proceed_" + vocal.filename
+    output_vocal_path = os.path.join(TEST_PROCEED_FOLDER, output_vocal_filename)
+    vocal_file_url = f'/test_proceed/{output_vocal_filename}'
+    previous_vocal_file_url = f'/test/{vocal.filename}'
     #graph_filename = process_audio(filepath, output_path, threshold, ratio, normalize)
 
     
-    graph_filename = process_audio_advanced(filepath, output_path, threshold, ratio,attack, release,knee, normalize)
+    graph_filename = process_audio_advanced(vocal_filepath, output_vocal_path, threshold, ratio,attack, release,knee, normalize)
 
     image_url = f'/static/{graph_filename}'
 
-    print(f"[DEBUG] 受け取ったファイル名: {file.filename}")
+    print(f"[DEBUG] 受け取ったファイル名: {vocal.filename}")
     print(f"[DEBUG] 受け取った数値: {normalize}")
     print(f"[DEBUG] 受け取った数値: {ratio}")
     print(f"[DEBUG] 受け取った数値: {threshold}")
 
-    return jsonify({ "filename": file.filename, "file_url": file_url, "image_url" : image_url, "previous_file_url": previous_file_url})
+    return jsonify({ 
+        "vocal" : {
+            "filename": vocal.filename,
+            "file_url": vocal_file_url,
+            "image_url" : image_url,
+            "previous_file_url": previous_vocal_file_url
+        }
+     })
 
 @app.route('/test/<filename>')
 def get_original_file(filename):

@@ -10,9 +10,12 @@ function ResultPage() {
     }
 
     const location = useLocation();
-    const previousFileUrl = location.state?.previousFileUrl;
-    const fileUrl = location.state?.fileUrl;
+    const previousFileUrl = location.state?.vocalPreviousFileUrl;
+    const fileUrl = location.state?.vocalFileUrl;
     const imageUrl = location.state?.imageUrl;
+
+    console.log("処理前:", previousFileUrl)
+    console.log("処理後:", fileUrl)
 
     return (
       <div>
