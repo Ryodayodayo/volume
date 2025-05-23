@@ -27,6 +27,7 @@ def test_upload():
     output_filename = "proceed_" + file.filename
     output_path = os.path.join(TEST_PROCEED_FOLDER, output_filename)
     file_url = f'/test_proceed/{output_filename}'
+    previous_file_url = f'/test/{file.filename}'
     #graph_filename = process_audio(filepath, output_path, threshold, ratio, normalize)
 
     
@@ -39,7 +40,11 @@ def test_upload():
     print(f"[DEBUG] 受け取った数値: {ratio}")
     print(f"[DEBUG] 受け取った数値: {threshold}")
 
-    return jsonify({ "filename": file.filename, "file_url": file_url, "image_url" : image_url})
+    return jsonify({ "filename": file.filename, "file_url": file_url, "image_url" : image_url, "previous_file_url": previous_file_url})
+
+@app.route('/test/<filename>')
+def get_original_file(filename):
+    return send_from_directory("test", filename)
 
 @app.route('/test_proceed/<output_filename>')
 def get_processed_file(output_filename):

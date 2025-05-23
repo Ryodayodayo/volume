@@ -10,13 +10,19 @@ function ResultPage() {
     }
 
     const location = useLocation();
+    const previousFileUrl = location.state?.previousFileUrl;
     const fileUrl = location.state?.fileUrl;
     const imageUrl = location.state?.imageUrl;
 
     return (
       <div>
         <h1>処理完了</h1>
-         <audio src={`http://localhost:5000${fileUrl}`} controls alt="result" />
+        <label>処理前
+          <audio src={`http://localhost:5000${previousFileUrl}`} controls alt="result" />
+        </label>
+        <label>処理後
+          <audio src={`http://localhost:5000${fileUrl}`} controls alt="result" />   
+        </label>
           <img
             src={`http://localhost:5000${imageUrl}`}
             alt="processed waveform"

@@ -32,11 +32,13 @@ function UploadForm () {
      try {
       const response = await axios.post("http://localhost:5000/test", formData);
 
+      const previousFileUrl = response.data.previous_file_url;
+
       const filename = response.data.filename;
       const fileUrl = response.data.file_url;
       const imageUrl = response.data.image_url;
 
-      navigate(`/result/${filename}`, { state: {fileUrl : fileUrl, imageUrl : imageUrl} });
+      navigate(`/result/${filename}`, { state: {fileUrl : fileUrl, imageUrl : imageUrl, previousFileUrl: previousFileUrl}});
       
     } catch (err) {
       alert("アップロード失敗");
