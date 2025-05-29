@@ -2,6 +2,9 @@ from flask import Flask, render_template, request, jsonify, redirect, url_for, s
 from flask_cors import CORS
 import os
 from testApp import process_audio_advanced, process_mastering_audio, process_mix_audio
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 app = Flask(__name__)
 CORS(app)  
@@ -17,7 +20,7 @@ def home():
 
 @app.route("/test", methods=["POST"])
 def test_upload():
-    print("データ受け取った")
+    logging.info("データ受け取った")
 
     normalize = float(request.form.get("normalize"))
     ratio = float(request.form.get("ratio"))
