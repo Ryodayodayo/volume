@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang = "ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewpoint" content="widt=device-width, initial-scale=1.0">
+        <title>コンプレッサーとノーマライズをいい感じにできるサイト</title>
+    </head>
+    <body>
+        <h1>コンプレッサーとノーマライズをいい感じにできるサイト</h1>
+        <form action="/upload" method="POST" id = "upload-form" enctype="multipart/form-data">
+            <label for="audio-upload">音声ファイルをアップロード</label>
+            <br><br>
+            <input type="file" id="audio-upload" name="file" accept="audio/*" required>
+            <br><br>
+
+            <!--コンプレッサーの値設定-->
+            <label for="threshold">スレッショルド</label>
+            <input type="number" id="threshold" name="threshold" value="0.5" step="0.01" required>
+            <br>
+            <label for="ratio">レシオ</label>
+            <input type="number" id="ratio" name="ratio" value="4" step="0.1" required>
+            <br><br>
+
+            <!--ノーマライズの値設定-->
+            <label for="normalize">ターゲット音量</label>
+            <input type="number" id="target_level" name="target_level" value="0.7" step="0.01" required>
+            <br><br>
+
+            <button type="submit">アップロード</button>
+        </form>
+
+        <div id="processing-message" style="display:none;">
+            <p>処理中です。しばらくお待ちください。</p>
+        </div>
+
+    </body>
+</html>
