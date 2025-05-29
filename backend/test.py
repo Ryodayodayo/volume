@@ -11,6 +11,10 @@ TEST_PROCESSED_FOLDER = "test_processed"
 os.makedirs(TEST_FOLDER, exist_ok=True)
 os.makedirs(TEST_PROCESSED_FOLDER, exist_ok=True)
 
+@app.route("/")
+def home():
+    return "Hello from Render Flask app!"
+
 @app.route("/test", methods=["POST"])
 def test_upload():
     normalize = float(request.form.get("normalize"))
