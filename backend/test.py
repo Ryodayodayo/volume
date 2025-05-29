@@ -17,6 +17,8 @@ def home():
 
 @app.route("/test", methods=["POST"])
 def test_upload():
+    print("データ受け取ったよ")
+
     normalize = float(request.form.get("normalize"))
     ratio = float(request.form.get("ratio"))
     threshold = float(request.form.get("threshold"))
