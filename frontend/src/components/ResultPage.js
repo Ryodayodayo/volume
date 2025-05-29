@@ -8,6 +8,8 @@ import axios from 'axios';
 
 function ResultPage() {
 
+  const baseURL = process.env.REACT_APP_BASE_URL; //.envから環境変数読み込み
+
    const navigate = useNavigate()
    const handleUpload = () => {
         navigate('/')
@@ -65,8 +67,8 @@ function ResultPage() {
         return await context.decodeAudioData(arrayBuffer);
       };
 
-      const instBuffer = await fetchAndDecode(`http://localhost:5000${instFileUrl}`);
-      const vocalBuffer = await fetchAndDecode(`http://localhost:5000${fileUrl}`);
+      const instBuffer = await fetchAndDecode(`${baseURL}${instFileUrl}`);
+      const vocalBuffer = await fetchAndDecode(`${baseURL}${fileUrl}`);
 
       //曲の長さを取得
       setInstDuration(instBuffer.duration);

@@ -4,6 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import './UploadForm.css';
 
 function UploadForm () { 
+  const baseURL = process.env.REACT_APP_BASE_URL; //.envから環境変数読み込み
+
   const [vocal, setVocal] = useState();
   const [audio, setAudio] = useState();
   const [normalize, setNormalize] = useState(0.5);
@@ -32,7 +34,7 @@ function UploadForm () {
      setLoading(true);
 
      try {
-      const response = await axios.post("http://localhost:5000/test", formData);
+      const response = await axios.post(`${baseURL}/test`, formData);
 
       const vocalPreviousFileUrl = response.data.vocal.previous_file_url;
 
