@@ -35,6 +35,8 @@ function UploadForm () {
 
      try {
       const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/test`, formData);
+      alert("アップロードできてるよ");
+
 
       const vocalPreviousFileUrl = response.data.vocal.previous_file_url;
 
