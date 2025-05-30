@@ -38,7 +38,7 @@ def test_upload():
     previous_vocal_file_url = f'/test/{vocal.filename}'
     #graph_filename = process_audio(filepath, output_path, threshold, ratio, normalize)
 
-    logging.info("受け取ったファイル名: {vocal.filename}")
+    logging.info(f"受け取ったファイル名: {vocal.filename}")
 
     
     graph_filename = process_audio_advanced(vocal_filepath, output_vocal_path, threshold, ratio,attack, release,knee, normalize)
