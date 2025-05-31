@@ -3,6 +3,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.io import wavfile
 import soundfile as sf
+import logging
+
+# CHUNKサイズ（サンプル数）を設定
+CHUNK_SIZE = 1024
+
+
 
 def db_to_linear(db):
     """dB値からリニア振幅比に変換"""
@@ -180,22 +186,12 @@ def process_audio_advanced(input_path, output_path,
 
     return graph_filename
 
-import numpy as np
-import soundfile as sf
-from scipy.io import wavfile
-
-def normalize_audio(data, peak_level=1.0):
-    max_amp = np.max(np.abs(data))
-    if max_amp == 0:
-        return data
-    return data * (peak_level / max_amp)
-
 
 #inst用の処理関数
 def process_mastering_audio(input_path, output_path, normalize):
     # 音声読み込み（float32で統一）
-    fs, data = wavfile.read(input_path)
-    data = data.astype(np.float32) / 32768.0  # 16bit整数からfloatへ変換
+    data,fs = sf.read(input_path)
+    #data = data.astype(np.float32) / 32768.0  # 16bit整数からfloatへ変換
 
     # ノーマライズ (値はボーカルに適応されてるものと同じ)
     normalized = normalize_audio(data, normalize)
@@ -205,13 +201,15 @@ def process_mastering_audio(input_path, output_path, normalize):
 
 
 #mixの処理関数
-import soundfile as sf
-import numpy as np
 
 def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_ratio, offset_ms):
     # 読み込み
     inst_data, inst_sr = sf.read(inst_path)
     vocal_data, vocal_sr = sf.read(vocal_path)
+
+    logging.info(f"vocal_ratio = {vocal_ratio}")
+    logging.info(f"inst_ratio = {inst_ratio}")
+    logging.info(f"offset_ms = {offset_ms}")
 
     # サンプリングレートが違ったらエラー
     if inst_sr != vocal_sr:
