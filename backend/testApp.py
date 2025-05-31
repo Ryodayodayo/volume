@@ -123,14 +123,14 @@ def process_audio_advanced(input_path, output_path,
                            attack_ms, release_ms,
                            knee_db, normalize_level_db):
     # 読み込み
-    fs, data = wavfile.read(input_path)
+    data,fs = sf.read(input_path)
 
     # ステレオ対応（左のみ）
     if data.ndim == 2:
         data = data[:, 0]
 
     # init16型を正規化(最大値32768で割る)
-    data = data.astype(np.float32) / 32768.0
+    #data = data.astype(np.float32) / 32768.0
 
     # コンプレッサー処理
     #compressed = compressor_envelope(data, threshold_db, ratio, attack_ms, release_ms, fs, knee_db)
