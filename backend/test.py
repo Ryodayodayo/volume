@@ -11,8 +11,10 @@ CORS(app)
 
 TEST_FOLDER = "test"
 TEST_PROCESSED_FOLDER = "test_processed"
+BEFORE = "before"
 os.makedirs(TEST_FOLDER, exist_ok=True)
 os.makedirs(TEST_PROCESSED_FOLDER, exist_ok=True)
+os.makedirs(BEFORE, exist_ok=True)
 
 @app.route("/")
 def home():

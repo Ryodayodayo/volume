@@ -243,6 +243,77 @@ def apply_processing_chain(audio_path, steps):
 
     return audio_path
 
+def read_and_downsample(file_path, target_points):
+    """
+    ダウンサンプリング
+    """
+    data, sr = sf.read(file_path)
+    
+    # モノラル化
+    if data.ndim == 2:
+        data = data[:, 0]
+    
+    # ダウンサンプリング
+    if len(data) > target_points:
+        indices = np.linspace(0, len(data) - 1, target_points, dtype=int)
+        data = data[indices]
+    
+    return data
+
+def create_graph(input_path, processed_path, graph_path, target_points=10000) :
+        # ファイル情報を取得
+    with sf.SoundFile(input_path) as sf_in:
+        total_frames = sf_in.frames
+        samplerate = sf_in.samplerate
+        
+    # 大きなファイルの場合のみダウンサンプリング
+    if total_frames > target_points * 2:
+        print(f"大きなファイル ({total_frames:,} samples) をダウンサンプリングします...")
+        
+        # チャンク単位で読み込みながらダウンサンプリング
+        original_data = read_and_downsample(input_path, target_points)
+        processed_data = read_and_downsample(processed_path, target_points)
+        
+        # 時間軸もダウンサンプリング
+        time_axis = np.linspace(0, total_frames / samplerate, len(original_data))
+        
+    else:
+        # 小さなファイルはそのまま読み込み
+        original_data, sr1 = sf.read(input_path)
+        processed_data, sr2 = sf.read(processed_path)
+        
+        # モノラル化
+        if original_data.ndim == 2:
+            original_data = original_data[:, 0]
+        if processed_data.ndim == 2:
+            processed_data = processed_data[:, 0]
+            
+        time_axis = np.linspace(0, len(original_data) / samplerate, len(original_data))
+    
+    # グラフ作成
+    plt.figure(figsize=(12, 8))
+    
+    plt.subplot(2, 1, 1)
+    plt.plot(time_axis, original_data, linewidth=0.5)
+    plt.title(f"Original Waveform")
+    plt.xlabel("Time [s]")
+    plt.ylabel("Amplitude")
+    plt.grid(True, alpha=0.3)
+    
+    plt.subplot(2, 1, 2)
+    plt.plot(time_axis, processed_data, linewidth=0.5)
+    plt.title(f"Processed Waveform")
+    plt.xlabel("Time [s]")
+    plt.ylabel("Amplitude")
+    plt.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    plt.savefig(graph_path, dpi=100, bbox_inches='tight')
+    plt.close()  # メモリ解放
+    
+    print(f"グラフを保存しました: {graph_path}")
+
+
 def process_audio_advanced(input_path, output_path,
                            threshold_db, ratio,
                            attack_ms, release_ms,
@@ -258,16 +329,22 @@ def process_audio_advanced(input_path, output_path,
     #normalized = normalize_audio(compressed, normalize_level_db)
     logging.info("音声処理に入った")
 
-    first_path = "before"+input_path
+    PROCESSING = "processing"
+    os.makedirs(PROCESSING, exist_ok=True) #beforeのフォルダがなければ作る
 
+    processing_path = os.path.join(PROCESSING,os.path.basename(input_path))
+
+    """
     dst_dir = os.path.dirname(first_path)  # コピー先のディレクトリ
 
     if not os.path.exists(dst_dir):
         os.makedirs(dst_dir)  # コピー先のディレクトリがなければ作る
-    shutil.copyfile(input_path, first_path) #元データをfirst_pathにコピー
+    """    
+
+    shutil.copyfile(input_path, processing_path) #元データをpricessing_pathにコピー
 
     # 元データ読み込み
-    data,fs = sf.read(first_path)
+    data,fs = sf.read(input_path)
 
     
     # ステレオ対応（左のみ）
@@ -288,7 +365,7 @@ def process_audio_advanced(input_path, output_path,
     """
     processed = apply_processing_chain(input_path, processing_steps)
     """
-    processed_path = apply_processing_chain(input_path, processing_steps)
+    processed_path = apply_processing_chain(processing_path, processing_steps)
 
     logging.info("処理終了")
     
@@ -310,7 +387,7 @@ def process_audio_advanced(input_path, output_path,
     #sf.write(output_path, processed, samplerate=fs, subtype='FLOAT')
 
     # グラフ描画
-    base_filename = os.path.basename(first_path)
+    base_filename = os.path.basename(input_path)
     graph_filename = f"graph_{os.path.splitext(base_filename)[0]}.png"
     if not os.path.exists('static'):
         os.makedirs('static')
@@ -318,6 +395,14 @@ def process_audio_advanced(input_path, output_path,
 
     logging.info("グラフパス作成完了")
 
+    create_graph(
+        input_path, 
+        output_path, 
+        graph_path,
+        target_points=10000,  # 1万ポイントに削減(ダウンサンプリング)
+    )
+
+    """
     time = np.linspace(0, len(data) / fs, num=len(data))
 
     plt.figure(figsize=(6, 3))
@@ -336,7 +421,8 @@ def process_audio_advanced(input_path, output_path,
     plt.tight_layout()
     plt.savefig(graph_path)
     plt.close()
-
+    """
+    
     return graph_filename
 
 def normalize_inst_audio(data, target_level): #inst用のノーマライズ関数
