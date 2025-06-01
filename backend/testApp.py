@@ -500,7 +500,7 @@ def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_rati
 
     with sf.SoundFile(vocal_path) as sf_vocal_in,\
          sf.SoundFile(inst_path) as sf_inst_in,\
-         sf.SoundFile(temp_path, mode='w', samplerate=sf_vocal_in.samplerate, channels=sf_vocal_in.channels, format=sf_vocal_in.format) as sf_out:
+         sf.SoundFile(temp_path, mode='w', samplerate=sf_vocal_in.samplerate, channels=2, format=sf_vocal_in.format) as sf_out:
         
          logging.info(f"vocal_ratio = {vocal_ratio}")
          logging.info(f"inst_ratio = {inst_ratio}")
