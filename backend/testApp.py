@@ -9,6 +9,22 @@ import logging
 CHUNK_SIZE = 1024
 
 
+#ファイル全体を一度読み込んで最大値を得る
+def get_peak(input_path):
+    peak = 0.0
+    while True:
+        with sf.SoundFile(input_path) as sf_in :
+            chunk = sf_in.read(CHUNK_SIZE, dtype='float32')
+            if len(chunk) == 0 :
+                break
+            #ステレオだった場合モノラル(左側だけ)に変換
+            if chunk.ndim == 2 :
+                data = chunk[:,0]
+            else:
+                data = chunk
+            peak = max(peak, np.max(np.abs(data))) #保存されているpeakとchunk内の最大値を比較し、大きい方をpeakに保存する   
+        return peak    
+                    
 
 def db_to_linear(db):
     """dB値からリニア振幅比に変換"""
