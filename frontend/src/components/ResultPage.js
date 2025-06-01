@@ -123,7 +123,7 @@ function ResultPage() {
 
     const handleConfirmVolumeAndOffset = async () => {
       try {
-        const response = await axios.post(`${process.env.REACT_APP_BASE_URL}`, formData);
+        const response = await axios.post(`${process.env.REACT_APP_BASE_URL}/api/apply_mix`, formData);
         alert("音量バランスとオフセットが確定されました");
         window.location.reload();
       } catch (error) {
