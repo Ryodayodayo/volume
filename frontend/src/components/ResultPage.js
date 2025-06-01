@@ -123,7 +123,7 @@ function ResultPage() {
 
     const handleConfirmVolumeAndOffset = async () => {
       try {
-        const response = await axios.post("http://localhost:5000/api/apply_mix", formData);
+        const response = await axios.post(`${process.env.REACT_APP_BASE_URL}`, formData);
         alert("音量バランスとオフセットが確定されました");
         window.location.reload();
       } catch (error) {
@@ -142,19 +142,20 @@ function ResultPage() {
       <div>
         <h1>処理完了</h1>
         <label>処理前
-          <audio src={`http://localhost:5000${previousFileUrl}`} controls/>
+          <audio src={`${process.env.REACT_APP_BASE_URL}${previousFileUrl}`} controls/>
         </label>
         <label>処理後
-          <audio src={`http://localhost:5000${fileUrl}`} controls/>   
+          <audio src={`${process.env.REACT_APP_BASE_URL}${fileUrl}`} controls/>   
         </label>
+        
           <img
-            src={`http://localhost:5000${imageUrl}`}
+            src={`${process.env.REACT_APP_BASE_URL}${imageUrl}`}
             alt="processed waveform"
             style={{ maxWidth: '100%', height: 'auto' }}
           />
 
         <label>MIX処理後
-          <audio src={`http://localhost:5000${mixFileUrl}`} controls/>
+          <audio src={`${process.env.REACT_APP_BASE_URL}${mixFileUrl}`} controls/>
         </label>
 
         <div>
