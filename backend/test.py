@@ -45,6 +45,8 @@ def test_upload():
 
     image_url = f'/static/{graph_filename}'
 
+    logging.info("グラフ画像URL発行")
+
     print(f"[DEBUG] 受け取ったファイル名: {vocal.filename}")
     print(f"[DEBUG] 受け取った数値: {normalize}")
     print(f"[DEBUG] 受け取った数値: {ratio}")
@@ -57,8 +59,12 @@ def test_upload():
     output_inst_path = os.path.join(TEST_PROCESSED_FOLDER, output_inst_filename)
     inst_file_url = f"/test_processed/{output_inst_filename}"
 
+    logging.info("instの音声処理開始")
+
     #instの音声処理
     process_mastering_audio(inst_filepath, output_inst_path, normalize)
+
+    logging.info("instの音声処理完了")
 
     # ミックス処理
     output_mix_filename = "mix_" + vocal.filename
@@ -66,6 +72,8 @@ def test_upload():
     mix_file_url = f"/test_processed/{output_mix_filename}"
 
     process_mix_audio(output_inst_path, output_vocal_path, output_mix_path, vocal_ratio=1.0, inst_ratio=1.0, offset_ms = 0)
+
+    logging.info("mix処理完了")
 
 
 
