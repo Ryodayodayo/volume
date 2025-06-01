@@ -490,37 +490,11 @@ def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_rati
     sf.write(output_path, mix, inst_sr)
 
 """    
-#instのRMSを分析する関数
-def analyze_inst_rms_per_chunk(inst_path, chunk_size=CHUNK_SIZE):
-    """instの各チャンクのRMSレベルを事前分析"""
-    rms_levels = []
-    
-    with sf.SoundFile(inst_path) as sf_in:
-        while True:
-            chunk = sf_in.read(chunk_size, dtype='float32')
-            if len(chunk) == 0:
-                break
-            
-            # ステレオの場合は平均化
-            if chunk.ndim == 2:
-                chunk = np.mean(chunk, axis=1)
-            
-            # RMS計算
-            rms = np.sqrt(np.mean(chunk**2)) if len(chunk) > 0 else 0
-            rms_db = linear_to_db(rms) if rms > 1e-10 else -60
-            rms_levels.append(rms_db)
-    
-    return np.array(rms_levels)
+
 
 
 #mixの処理関数
-def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_ratio, offset_ms, adaptation_strength):
-
-    # 事前にinstの音量分析
-    logging.info("Instの音量分析を開始")
-    inst_rms_levels = analyze_inst_rms_per_chunk(inst_path)
-    inst_mean_rms = np.mean(inst_rms_levels)
-    logging.info(f"Inst平均音量: {inst_mean_rms:.2f} dB")
+def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_ratio, offset_ms):
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp: #一時ファイルを作成
 
@@ -598,19 +572,8 @@ def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_rati
             chunk_vocal = chunk_vocal[:min_len]
             chunk_inst = chunk_inst[:min_len]
 
-            # 動的ボーカル調整を追加
-            if chunk_index < len(inst_rms_levels):
-                current_inst_level = inst_rms_levels[chunk_index]
-                # instが平均より大きい場合はボーカルも上げる、小さい場合は下げる
-                level_diff = current_inst_level - inst_mean_rms
-                vocal_adjustment = 1.0 + (level_diff * adaptation_strength / 20.0)  # dBをリニア比に変換
-                vocal_adjustment = np.clip(vocal_adjustment, 0.3, 3.0)  # 調整範囲を制限
- 
-            else:
-                vocal_adjustment = 1.0 #変化なし
-
             # ミックス処理
-            mix_chunk = 0.5 * (chunk_inst * inst_ratio + chunk_vocal * vocal_ratio*vocal_adjustment)
+            mix_chunk = 0.5 * (chunk_inst * inst_ratio + chunk_vocal * vocal_ratio)
 
             # 出力ファイルに書き込み
             sf_out.write(mix_chunk)
