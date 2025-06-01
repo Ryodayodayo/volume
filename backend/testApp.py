@@ -316,9 +316,11 @@ def process_audio_advanced(input_path, output_path,
         os.makedirs('static')
     graph_path = os.path.join('static', graph_filename)
 
+    logging.info("グラフパス作成完了")
+
     time = np.linspace(0, len(data) / fs, num=len(data))
 
-    plt.figure(figsize=(12, 6))
+    plt.figure(figsize=(6, 3))
     plt.subplot(2, 1, 1)
     plt.plot(time, data)
     plt.title("Original Waveform")
