@@ -447,8 +447,6 @@ def process_mastering_audio(input_path, output_path, normalize):
     # float形式で保存
     sf.write(output_path, data, samplerate=fs, subtype='FLOAT')
 
-
-#mixの処理関数
 """
 def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_ratio, offset_ms):
     # 読み込み
@@ -492,7 +490,37 @@ def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_rati
     sf.write(output_path, mix, inst_sr)
 
 """    
-def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_ratio, offset_ms):
+#instのRMSを分析する関数
+def analyze_inst_rms_per_chunk(inst_path, chunk_size=CHUNK_SIZE):
+    """instの各チャンクのRMSレベルを事前分析"""
+    rms_levels = []
+    
+    with sf.SoundFile(inst_path) as sf_in:
+        while True:
+            chunk = sf_in.read(chunk_size, dtype='float32')
+            if len(chunk) == 0:
+                break
+            
+            # ステレオの場合は平均化
+            if chunk.ndim == 2:
+                chunk = np.mean(chunk, axis=1)
+            
+            # RMS計算
+            rms = np.sqrt(np.mean(chunk**2)) if len(chunk) > 0 else 0
+            rms_db = linear_to_db(rms) if rms > 1e-10 else -60
+            rms_levels.append(rms_db)
+    
+    return np.array(rms_levels)
+
+
+#mixの処理関数
+def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_ratio, offset_ms, adaptation_strength):
+
+    # 事前にinstの音量分析
+    logging.info("Instの音量分析を開始")
+    inst_rms_levels = analyze_inst_rms_per_chunk(inst_path)
+    inst_mean_rms = np.mean(inst_rms_levels)
+    logging.info(f"Inst平均音量: {inst_mean_rms:.2f} dB")
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp: #一時ファイルを作成
 
@@ -516,6 +544,9 @@ def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_rati
          # オフセット処理用の変数
          vocal_pad_remaining = 0
          inst_pad_remaining = 0
+
+         #チャンクのインデックス番号
+         chunk_index = 0
             
          if offset_s > 0:
             # vocalを遅らせる → vocalに無音パディング追加
@@ -567,8 +598,19 @@ def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_rati
             chunk_vocal = chunk_vocal[:min_len]
             chunk_inst = chunk_inst[:min_len]
 
+            # 動的ボーカル調整を追加
+            if chunk_index < len(inst_rms_levels):
+                current_inst_level = inst_rms_levels[chunk_index]
+                # instが平均より大きい場合はボーカルも上げる、小さい場合は下げる
+                level_diff = current_inst_level - inst_mean_rms
+                vocal_adjustment = 1.0 + (level_diff * adaptation_strength / 20.0)  # dBをリニア比に変換
+                vocal_adjustment = np.clip(vocal_adjustment, 0.3, 3.0)  # 調整範囲を制限
+ 
+            else:
+                vocal_adjustment = 1.0 #変化なし
+
             # ミックス処理
-            mix_chunk = 0.5 * (chunk_inst * inst_ratio + chunk_vocal * vocal_ratio)
+            mix_chunk = 0.5 * (chunk_inst * inst_ratio + chunk_vocal * vocal_ratio*vocal_adjustment)
 
             # 出力ファイルに書き込み
             sf_out.write(mix_chunk)

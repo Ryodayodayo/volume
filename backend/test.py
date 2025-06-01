@@ -73,7 +73,7 @@ def test_upload():
     output_mix_path = os.path.join(TEST_PROCESSED_FOLDER, output_mix_filename)
     mix_file_url = f"/test_processed/{output_mix_filename}"
 
-    process_mix_audio(output_inst_path, output_vocal_path, output_mix_path, vocal_ratio=1.0, inst_ratio=1.0, offset_ms = 0)
+    process_mix_audio(output_inst_path, output_vocal_path, output_mix_path, vocal_ratio=1.0, inst_ratio=1.0, offset_ms = 0, adaptation_strength = 0.5)
 
     logging.info("mix処理完了")
 
@@ -127,7 +127,7 @@ def apply_volume_mix():
     
 
     # 音量を適用してミックスし、ファイル保存
-    process_mix_audio(output_inst_path, output_vocal_path, output_mix_path, vocal_ratio, inst_ratio, offset_ms)
+    process_mix_audio(output_inst_path, output_vocal_path, output_mix_path, vocal_ratio, inst_ratio, offset_ms, adaptation_strength = 0.5)
     
     return jsonify({"message": "音量バランス、オフセット受け取り完了"})
 
