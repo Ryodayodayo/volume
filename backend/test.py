@@ -126,7 +126,7 @@ def apply_volume_mix():
     offset_ms = float(request.form.get('offset_ms'))
     
 
-    # TODO: 音量を適用してミックスし、ファイル保存など
+    # 音量を適用してミックスし、ファイル保存
     process_mix_audio(output_inst_path, output_vocal_path, output_mix_path, vocal_ratio, inst_ratio, offset_ms)
     
     return jsonify({"message": "音量バランス、オフセット受け取り完了"})

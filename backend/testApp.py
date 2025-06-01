@@ -449,7 +449,7 @@ def process_mastering_audio(input_path, output_path, normalize):
 
 
 #mixの処理関数
-
+"""
 def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_ratio, offset_ms):
     # 読み込み
     inst_data, inst_sr = sf.read(inst_path)
@@ -490,3 +490,89 @@ def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_rati
 
     # 書き出し
     sf.write(output_path, mix, inst_sr)
+
+"""    
+def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_ratio, offset_ms):
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp: #一時ファイルを作成
+
+        temp_path = tmp.name
+
+    with sf.SoundFile(vocal_path) as sf_vocal_in,\
+         sf.SoundFile(inst_path) as sf_inst_in,\
+         sf.SoundFile(temp_path, mode='w', samplerate=sf_vocal_in.samplerate, channels=sf_vocal_in.channels, format=sf_vocal_in.format) as sf_out:
+        
+         logging.info(f"vocal_ratio = {vocal_ratio}")
+         logging.info(f"inst_ratio = {inst_ratio}")
+         logging.info(f"offset_ms = {offset_ms}")
+
+        # サンプリングレートが違ったらエラー
+         if sf_inst_in.samplerate != sf_vocal_in.samplerate:
+            raise ValueError("Sampling rates of inst and vocal do not match.") 
+
+        #オフセット値をmsからサンプリングレート基準に変換
+         offset_s = int(sf_vocal_in.samplerate * offset_ms / 1000)
+
+         # オフセット処理用の変数
+         vocal_pad_remaining = 0
+         inst_pad_remaining = 0
+            
+         if offset_s > 0:
+            # vocalを遅らせる → vocalに無音パディング追加
+            vocal_pad_remaining = abs(offset_s)
+         elif offset_s < 0:
+            # instに無音パディング追加
+            inst_pad_remaining = abs(offset_s)      
+         
+         while True :
+            chunk_vocal = sf_vocal_in.read(CHUNK_SIZE, dtype='float32')
+            chunk_inst = sf_inst_in.read(CHUNK_SIZE, dtype='float32')
+
+            # vocal_data をステレオに変換（モノラルなら）
+            if chunk_vocal.ndim == 1:
+                    chunk_vocal = np.stack([chunk_vocal, chunk_vocal], axis=1)
+
+            # inst をステレオに変換（モノラルなら）
+            if chunk_inst.ndim == 1:
+                chunk_inst = np.stack([chunk_inst, chunk_inst], axis=1)
+                    
+            if len(chunk_vocal) == 0 and len(chunk_inst) == 0:
+                break
+            
+            # vocal のパディング処理
+            if vocal_pad_remaining > 0:
+                pad_amount = min(vocal_pad_remaining, CHUNK_SIZE)
+                pad = np.zeros((pad_amount, 2), dtype='float32')
+                if len(chunk_vocal) > 0:
+                    chunk_vocal = np.concatenate([pad, chunk_vocal], axis=0)
+                else:
+                    chunk_vocal = pad
+                vocal_pad_remaining -= pad_amount
+
+            # inst のパディング処理
+            if inst_pad_remaining > 0:
+                pad_amount = min(inst_pad_remaining, CHUNK_SIZE)
+                pad = np.zeros((pad_amount, 2), dtype='float32')
+                if len(chunk_inst) > 0:
+                    chunk_inst = np.concatenate([pad, chunk_inst], axis=0)
+                else:
+                    chunk_inst = pad
+                inst_pad_remaining -= pad_amount
+
+            # 長さを揃える（短い方に合わせる）
+            min_len = min(len(chunk_vocal), len(chunk_inst))
+            if min_len == 0:
+                continue
+
+            chunk_vocal = chunk_vocal[:min_len]
+            chunk_inst = chunk_inst[:min_len]
+
+            # ミックス処理
+            mix_chunk = 0.5 * (chunk_inst * inst_ratio + chunk_vocal * vocal_ratio)
+
+            # 出力ファイルに書き込み
+            sf_out.write(mix_chunk)
+
+
+
+    shutil.move (temp_path, output_path) #一時ファイルの名前を元ファイルに置き換え(上書き)
