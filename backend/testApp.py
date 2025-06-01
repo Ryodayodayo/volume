@@ -289,14 +289,20 @@ def process_audio_advanced(input_path, output_path,
     processed = apply_processing_chain(input_path, processing_steps)
     """
     processed_path = apply_processing_chain(input_path, processing_steps)
+
+    logging.info("処理終了")
     
     #処理後のデータ読み込み
     processed, fs_processed = sf.read(processed_path)
+
+    logging.info("データ読み込み完了")
 
     if processed.ndim == 2:
         processed = data[:, 0] #モノラル化
 
     sf.write(output_path, processed, samplerate=fs, subtype='FLOAT')    
+
+    logging.info("データ書き出し完了")
 
 
 
