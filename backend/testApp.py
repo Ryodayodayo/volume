@@ -112,7 +112,7 @@ def compressor_envelope(audio_path, threshold_db, ratio, attack_ms, release_ms, 
 
                 sf_out.write(chunk_compressed)
 
-    os.replace(temp_path, audio_path)
+    shutil.move(temp_path, audio_path)
     print("コンプレッサー終了")
 
     return audio_path
@@ -192,7 +192,7 @@ def normalize_audio(audio_path, target_level):
 
             sf_out.write(chunk_normalized)  
     
-    os.replace (temp_path, audio_path) #一時ファイルの名前を元ファイルに置き換え(上書き)
+    shutil.move (temp_path, audio_path) #一時ファイルの名前を元ファイルに置き換え(上書き)
     print("ノーマライズ終了")
 
     return audio_path    
