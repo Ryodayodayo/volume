@@ -343,13 +343,10 @@ def process_audio_advanced(input_path, output_path,
 
     shutil.copyfile(input_path, processing_path) #元データをpricessing_pathにコピー
 
-    # 元データ読み込み
-    data,fs = sf.read(input_path)
 
-    
-    # ステレオ対応（左のみ）
-    if data.ndim == 2:
-        data = data[:, 0]
+    # 元データ読み込み(サンプリングレート取得用)
+    data,fs = sf.read(input_path)
+ 
 
 
     
@@ -375,9 +372,9 @@ def process_audio_advanced(input_path, output_path,
     logging.info("データ読み込み完了")
 
     if processed.ndim == 2:
-        processed = data[:, 0] #モノラル化
+        processed = processed[:, 0] #モノラル化
 
-    sf.write(output_path, processed, samplerate=fs, subtype='FLOAT')    
+    sf.write(output_path, processed, samplerate=fs_processed, subtype='FLOAT')    
 
     logging.info("データ書き出し完了")
 
