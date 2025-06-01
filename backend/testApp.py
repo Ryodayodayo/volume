@@ -8,7 +8,7 @@ import tempfile #一時ファイル用
 import shutil #ファイルコピー用
 
 # CHUNKサイズ（サンプル数）を設定
-CHUNK_SIZE = 1024*8
+CHUNK_SIZE = 1024
 
 
 #ファイル全体を一度読み込んで最大値を得る
@@ -26,7 +26,7 @@ def get_peak(input_path):
             else:
                 data = chunk
             peak = max(peak, np.max(np.abs(data))) #保存されているpeakとchunk内の最大値を比較し、大きい方をpeakに保存する   
-    print(peak)
+    logging.info("peakを計測したよ")
     return peak    
 
 def db_to_linear(db):
@@ -113,7 +113,7 @@ def compressor_envelope(audio_path, threshold_db, ratio, attack_ms, release_ms, 
                 sf_out.write(chunk_compressed)
 
     shutil.move(temp_path, audio_path)
-    print("コンプレッサー終了")
+    logging.info("コンプレッサー終了")
 
     return audio_path
 
@@ -193,7 +193,7 @@ def normalize_audio(audio_path, target_level):
             sf_out.write(chunk_normalized)  
     
     shutil.move (temp_path, audio_path) #一時ファイルの名前を元ファイルに置き換え(上書き)
-    print("ノーマライズ終了")
+    logging.info("ノーマライズ終了")
 
     return audio_path    
 
