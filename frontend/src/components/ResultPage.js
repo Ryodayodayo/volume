@@ -74,8 +74,8 @@ function ResultPage() {
       //GainNode を使って音量調整
       const instGainNode = context.createGain();
       const vocalGainNode = context.createGain();
-      instGainNode.gain.value = instVolume;       // inst音量
-      vocalGainNode.gain.value = vocalVolume;     // ボーカル音量
+      instGainNode.gain.value = instVolume*0.5;       // inst音量
+      vocalGainNode.gain.value = vocalVolume*0.5;     // ボーカル音量 なんでかわからないけど音がでかいから両方半分にしてる(相対的には変わってないから機能的には大丈夫だと思う)
 
       //Source を useRef に保存し、GainNode 経由で接続
       const instSource = context.createBufferSource();
