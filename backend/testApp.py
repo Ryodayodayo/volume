@@ -210,11 +210,14 @@ def reverb_audio(audio_path, fs, decay, delay_ms, repeats, mix):
     """
     delay_samples = int(fs * delay_ms / 1000)
     
-    # 各リピートのためのバッファを初期化
+    # 各リピートのための循環バッファを初期化
     buffers = []
+    buffer_positions = []
+    
     for i in range(1, repeats + 1):
         buffer_size = delay_samples * i
         buffers.append(np.zeros(buffer_size))
+        buffer_positions.append(0)  # 書き込み位置を追跡
     
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
         temp_path = tmp.name
@@ -237,25 +240,22 @@ def reverb_audio(audio_path, fs, decay, delay_ms, repeats, mix):
             for i in range(repeats):
                 attenuation = decay ** (i + 1)
                 buffer = buffers[i]
-                buffer_delay = delay_samples * (i + 1)
+                pos = buffer_positions[i]
+                buffer_size = len(buffer)
                 
-                # 現在のチャンクサイズに合わせて遅延信号を取得
-                if len(buffer) >= len(chunk):
-                    # バッファから遅延信号を取得（サイズを現在のチャンクに合わせる）
-                    delayed_signal = buffer[:len(chunk)].copy()
-                else:
-                    # バッファサイズがチャンクより小さい場合は0パディング
-                    delayed_signal = np.zeros(len(chunk))
-                    delayed_signal[:len(buffer)] = buffer
+                # 遅延信号を取得（循環バッファから読み取り）
+                delayed_signal = np.zeros(len(chunk))
                 
-                # バッファを更新（新しいデータを追加し、古いデータを削除）
-                if len(chunk) >= len(buffer):
-                    # チャンクがバッファより大きい場合、チャンクの最後の部分のみを保存
-                    buffer[:] = chunk[-len(buffer):]
-                else:
-                    # 通常の場合：バッファを右にシフトして新しいデータを追加
-                    buffer[len(chunk):] = buffer[:-len(chunk)]
-                    buffer[:len(chunk)] = chunk
+                for j in range(len(chunk)):
+                    # 読み取り位置（現在の書き込み位置から遅延サンプル分戻る）
+                    read_pos = (pos + j) % buffer_size
+                    delayed_signal[j] = buffer[read_pos]
+                    
+                    # 新しいデータを書き込み
+                    buffer[read_pos] = chunk[j]
+                
+                # 書き込み位置を更新
+                buffer_positions[i] = (pos + len(chunk)) % buffer_size
                 
                 # 減衰した遅延信号をリバーブに加算
                 reverb_chunk += attenuation * delayed_signal
@@ -272,6 +272,7 @@ def reverb_audio(audio_path, fs, decay, delay_ms, repeats, mix):
     logging.info("リバーブ処理終了")
     
     return audio_path
+
 
 
 def delay_audio(audio_path, fs, delay_ms, feedback, mix) :
@@ -474,7 +475,8 @@ def process_audio_advanced(input_path, output_path,
         apply_compressor(threshold_db, ratio, attack_ms, release_ms, fs, knee_db),
         apply_compressor(threshold_db, ratio, attack_ms, release_ms, fs, knee_db),
         apply_normalize(normalize_level_db),
-        apply_reverb(fs, decay=0.4, delay_ms=60, repeats=4, mix=0.2),
+        #apply_reverb(fs, decay=1, delay_ms=1, repeats=2, mix=0.2),
+        apply_reverb(fs, decay=0.5, delay_ms=50, repeats=4, mix=0.3),
         #apply_delay(fs, delay_ms=200, feedback=0.25, mix=0.4),
     ]
     """
