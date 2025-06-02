@@ -197,6 +197,138 @@ def normalize_audio(audio_path, target_level):
 
     return audio_path    
 
+def reverb_audio(audio_path, fs, decay, delay_ms, repeats, mix):
+    """
+    チャンクベースのリバーブ処理（修正版）
+    
+    audio_path: 入力音声ファイルのパス
+    fs: サンプリング周波数
+    decay: 減衰率
+    delay_ms: ディレイ時間（ミリ秒）
+    repeats: リピート回数
+    mix: ドライ/ウェット比（0.0-1.0）
+    """
+    delay_samples = int(fs * delay_ms / 1000)
+    
+    # 各リピートのためのバッファを初期化
+    buffers = []
+    for i in range(1, repeats + 1):
+        buffer_size = delay_samples * i
+        buffers.append(np.zeros(buffer_size))
+    
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+        temp_path = tmp.name
+        
+    with sf.SoundFile(audio_path) as sf_in, \
+         sf.SoundFile(temp_path, mode='w', samplerate=sf_in.samplerate, 
+                     channels=sf_in.channels, format=sf_in.format) as sf_out:
+        
+        while True:
+            chunk = sf_in.read(CHUNK_SIZE, dtype='float32')
+            if chunk.ndim == 2:
+                chunk = chunk[:, 0]
+            
+            if len(chunk) == 0:
+                break
+            
+            reverb_chunk = np.zeros_like(chunk)
+            
+            # 各リピートを処理
+            for i in range(repeats):
+                attenuation = decay ** (i + 1)
+                buffer = buffers[i]
+                buffer_delay = delay_samples * (i + 1)
+                
+                # 現在のチャンクサイズに合わせて遅延信号を取得
+                if len(buffer) >= len(chunk):
+                    # バッファから遅延信号を取得（サイズを現在のチャンクに合わせる）
+                    delayed_signal = buffer[:len(chunk)].copy()
+                else:
+                    # バッファサイズがチャンクより小さい場合は0パディング
+                    delayed_signal = np.zeros(len(chunk))
+                    delayed_signal[:len(buffer)] = buffer
+                
+                # バッファを更新（新しいデータを追加し、古いデータを削除）
+                if len(chunk) >= len(buffer):
+                    # チャンクがバッファより大きい場合、チャンクの最後の部分のみを保存
+                    buffer[:] = chunk[-len(buffer):]
+                else:
+                    # 通常の場合：バッファを右にシフトして新しいデータを追加
+                    buffer[len(chunk):] = buffer[:-len(chunk)]
+                    buffer[:len(chunk)] = chunk
+                
+                # 減衰した遅延信号をリバーブに加算
+                reverb_chunk += attenuation * delayed_signal
+            
+            # ドライとウェットをミックス
+            output_chunk = (1 - mix) * chunk + mix * reverb_chunk
+            
+            # クリッピング防止
+            output_chunk = np.clip(output_chunk, -1.0, 1.0)
+            
+            sf_out.write(output_chunk)
+    
+    shutil.move(temp_path, audio_path)
+    logging.info("リバーブ処理終了")
+    
+    return audio_path
+
+
+def delay_audio(audio_path, fs, delay_ms, feedback, mix) :
+    """
+    チャンクベースのディレイ処理
+    
+    audio_path: 入力音声ファイルのパス
+    fs: サンプリング周波数
+    delay_ms: ディレイ時間（ミリ秒）
+    feedback: フィードバック量
+    mix: ドライ/ウェット比（0.0-1.0）
+    """
+    delay_samples = int(fs * delay_ms / 1000)
+    
+    # ディレイバッファを初期化
+    delay_buffer = np.zeros(delay_samples)
+    
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+        temp_path = tmp.name
+        
+    with sf.SoundFile(audio_path) as sf_in, \
+         sf.SoundFile(temp_path, mode='w', samplerate=sf_in.samplerate, 
+                     channels=sf_in.channels, format=sf_in.format) as sf_out:
+        
+        while True:
+            chunk = sf_in.read(CHUNK_SIZE, dtype='float32')
+            if chunk.ndim == 2:
+                chunk = chunk[:, 0]
+            
+            if len(chunk) == 0:
+                break
+            
+            output_chunk = np.zeros_like(chunk)
+            
+            # チャンク内の各サンプルを処理
+            for i in range(len(chunk)):
+                # 現在のサンプル + フィードバックされた遅延信号
+                delayed_sample = delay_buffer[0]
+                output_chunk[i] = chunk[i] + feedback * delayed_sample
+                
+                # バッファを更新（FIFOキュー）
+                delay_buffer[:-1] = delay_buffer[1:]  # 左シフト
+                delay_buffer[-1] = output_chunk[i]    # 新しい値を末尾に追加
+            
+            # ドライとウェットをミックス
+            result_chunk = (1 - mix) * chunk + mix * output_chunk
+            
+            # クリッピング防止
+            result_chunk = np.clip(result_chunk, -1.0, 1.0)
+            
+            sf_out.write(result_chunk)
+    
+    shutil.move(temp_path, audio_path)
+    logging.info("ディレイ処理終了")
+    
+    return audio_path
+
 
 def apply_compressor(threshold_db, ratio, attack_ms, release_ms, fs, knee_db):
     def processor(audio_path):
@@ -210,32 +342,18 @@ def apply_normalize(normalize_level_db):
         return normalize_audio(audio_path, normalize_level_db)
     return processor
 
-def apply_reverb(data, fs, decay, delay_ms, repeats, mix):
-    delay_samples = int(fs * delay_ms / 1000)
-    reverb = np.zeros_like(data)
+def apply_reverb(fs, decay, delay_ms, repeats, mix):
+    def processor(audio_path):
+        logging.info("リバーブを開始するよ")
+        return reverb_audio(audio_path, fs, decay, delay_ms, repeats, mix)
+    return processor
 
-    for i in range(1, repeats + 1):
-        attenuated = (decay ** i) * np.pad(data, (delay_samples * i, 0), mode='constant')[:-delay_samples * i]
-        reverb += attenuated
+def apply_delay(fs, delay_ms, feedback, mix):
+    def processor(audio_path):
+        logging.info("ディレイを開始するよ")
+        return delay_audio(audio_path, fs, delay_ms, feedback, mix)
+    return processor
 
-    # mixパラメータでドライとウェットをブレンド
-    output = (1 - mix) * data + mix * reverb
-
-    # クリップ防止（-1〜1の範囲に収める）
-    output = np.clip(output, -1.0, 1.0)
-    return output
-
-def apply_delay(data, fs, delay_ms, feedback, mix):
-    delay_samples = int(fs * delay_ms / 1000)
-    output = np.zeros_like(data)
-    
-    for i in range(delay_samples, len(data)):
-        output[i] = data[i] + feedback * output[i - delay_samples]
-    
-    # 原音と混ぜる
-    result = (1 - mix) * data + mix * output
-    result = np.clip(result, -1.0, 1.0)
-    return result
 
 def apply_processing_chain(audio_path, steps):
     for step in steps:
@@ -356,8 +474,8 @@ def process_audio_advanced(input_path, output_path,
         apply_compressor(threshold_db, ratio, attack_ms, release_ms, fs, knee_db),
         apply_compressor(threshold_db, ratio, attack_ms, release_ms, fs, knee_db),
         apply_normalize(normalize_level_db),
-        #lambda data: apply_reverb(data, fs, decay=0.4, delay_ms=60, repeats=4, mix=0.2),
-        #lambda data: apply_delay(data, fs, delay_ms=200, feedback=0.25, mix=0.4),
+        apply_reverb(fs, decay=0.4, delay_ms=60, repeats=4, mix=0.2),
+        #apply_delay(fs, delay_ms=200, feedback=0.25, mix=0.4),
     ]
     """
     processed = apply_processing_chain(input_path, processing_steps)
@@ -666,7 +784,7 @@ def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_rati
                     inst_data, inst_delay_remaining, inst_ended = inst_chunk
                     
                     # 終了条件の確認
-                    if vocal_ended and inst_ended and vocal_delay_remaining == 0 and inst_delay_remaining == 0:
+                    if vocal_ended and inst_ended : #and vocal_delay_remaining == 0 and inst_delay_remaining == 0:
                         # 両方のチャンクが無音かどうか確認
                         if not np.any(vocal_data) and not np.any(inst_data):
                             logging.info("処理完了：両方の音声ストリームが終了")
@@ -718,6 +836,7 @@ def process_audio_chunk(sf_file, delay_remaining, file_ended):
     
     # ファイルからデータを読み込み
     if frames_to_read > 0 and not file_ended:
+
         try:
             audio_data = sf_file.read(frames_to_read, dtype='float32')
             
