@@ -8,7 +8,7 @@ import tempfile #一時ファイル用
 import shutil #ファイルコピー用
 
 # CHUNKサイズ（サンプル数）を設定
-CHUNK_SIZE = 1024
+CHUNK_SIZE = 1024*1024
 
 
 #ファイル全体を一度読み込んで最大値を得る
@@ -491,7 +491,7 @@ def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_rati
 
 """    
 
-
+"""
 
 #mixの処理関数
 def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_ratio, offset_ms):
@@ -530,6 +530,7 @@ def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_rati
             inst_pad_remaining = abs(offset_s)      
          
          while True :
+
             chunk_vocal = sf_vocal_in.read(CHUNK_SIZE, dtype='float32')
             chunk_inst = sf_inst_in.read(CHUNK_SIZE, dtype='float32')
 
@@ -549,21 +550,33 @@ def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_rati
                 pad_amount = min(vocal_pad_remaining, CHUNK_SIZE)
                 pad = np.zeros((pad_amount, 2), dtype='float32')
                 if len(chunk_vocal) > 0:
-                    chunk_vocal = np.concatenate([pad, chunk_vocal], axis=0)
+                    remaining_size = max(0, CHUNK_SIZE - pad_amount)
+                    chunk_vocal = np.concatenate([pad, chunk_vocal[:remaining_size]], axis=0)
                 else:
                     chunk_vocal = pad
-                vocal_pad_remaining -= pad_amount
+                vocal_pad_remaining =vocal_pad_remaining - pad_amount
 
             # inst のパディング処理
             if inst_pad_remaining > 0:
                 pad_amount = min(inst_pad_remaining, CHUNK_SIZE)
                 pad = np.zeros((pad_amount, 2), dtype='float32')
                 if len(chunk_inst) > 0:
-                    chunk_inst = np.concatenate([pad, chunk_inst], axis=0)
+                    remaining_size = max(0, CHUNK_SIZE - pad_amount)
+                    chunk_inst = np.concatenate([pad, chunk_inst[:remaining_size]], axis=0)
                 else:
                     chunk_inst = pad
                 inst_pad_remaining -= pad_amount
 
+            # 長さを揃える（長い方に合わせて、短い方を無音で埋める）
+            max_len = max(len(chunk_vocal), len(chunk_inst))
+            if len(chunk_vocal) < max_len:
+                pad = np.zeros((max_len - len(chunk_vocal), 2), dtype='float32')
+                chunk_vocal = np.concatenate([chunk_vocal, pad], axis=0)
+            if len(chunk_inst) < max_len:
+                pad = np.zeros((max_len - len(chunk_inst), 2), dtype='float32')
+                chunk_inst = np.concatenate([chunk_inst, pad], axis=0)
+            
+            
             # 長さを揃える（短い方に合わせる）
             min_len = min(len(chunk_vocal), len(chunk_inst))
             if min_len == 0:
@@ -571,6 +584,8 @@ def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_rati
 
             chunk_vocal = chunk_vocal[:min_len]
             chunk_inst = chunk_inst[:min_len]
+            
+            
 
             # ミックス処理
             mix_chunk = 0.5 * (chunk_inst * inst_ratio + chunk_vocal * vocal_ratio)
@@ -581,3 +596,173 @@ def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_rati
 
 
     shutil.move (temp_path, output_path) #一時ファイルの名前を元ファイルに置き換え(上書き)
+
+    """
+
+def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_ratio, offset_ms):
+    """
+    音声ファイルをミックスする関数
+    
+    Args:
+        inst_path: インストゥルメンタル音声ファイルのパス
+        vocal_path: ボーカル音声ファイルのパス
+        output_path: 出力ファイルのパス
+        vocal_ratio: ボーカルの音量比率
+        inst_ratio: インストゥルメンタルの音量比率
+        offset_ms: オフセット（ミリ秒）正の値でボーカルを遅らせ、負の値でインストを遅らせる
+    """
+    temp_path = None
+    try:
+        # 一時ファイルを作成
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+            temp_path = tmp.name
+
+        # 音声ファイルを開く
+        with sf.SoundFile(vocal_path) as sf_vocal_in, \
+             sf.SoundFile(inst_path) as sf_inst_in:
+            
+            logging.info(f"vocal_path = {vocal_path}")
+            logging.info(f"inst_path = {inst_path}")
+            logging.info(f"output_path = {output_path}")
+            logging.info(f"vocal_ratio = {vocal_ratio}")
+            logging.info(f"inst_ratio = {inst_ratio}")
+            logging.info(f"offset_ms = {offset_ms}")
+
+            # サンプリングレートの確認
+            if sf_inst_in.samplerate != sf_vocal_in.samplerate:
+                raise ValueError("vocalとinstのサンプリングレートが違います")
+
+            # 出力ファイルを開く
+            with sf.SoundFile(temp_path, mode='w', 
+                            samplerate=sf_vocal_in.samplerate, 
+                            channels=2, 
+                            format=sf_vocal_in.format) as sf_out:
+                
+                # オフセット値をサンプル数に変換
+                offset_samples = int(sf_vocal_in.samplerate * offset_ms / 1000)
+                
+                # 遅延サンプル数を初期化
+                vocal_delay_remaining = max(0, offset_samples)
+                inst_delay_remaining = max(0, -offset_samples)
+                
+                # ファイル終了フラグ
+                vocal_ended = False
+                inst_ended = False
+                
+                logging.info(f"オフセットサンプル数: {offset_samples}")
+                logging.info(f"ボーカル遅延: {vocal_delay_remaining}, インスト遅延: {inst_delay_remaining}")
+                
+                while True:
+                    # ボーカルチャンクの処理
+                    vocal_chunk = process_audio_chunk(
+                        sf_vocal_in, vocal_delay_remaining, vocal_ended
+                    )
+                    vocal_data, vocal_delay_remaining, vocal_ended = vocal_chunk
+                    
+                    # インストチャンクの処理
+                    inst_chunk = process_audio_chunk(
+                        sf_inst_in, inst_delay_remaining, inst_ended
+                    )
+                    inst_data, inst_delay_remaining, inst_ended = inst_chunk
+                    
+                    # 終了条件の確認
+                    if vocal_ended and inst_ended and vocal_delay_remaining == 0 and inst_delay_remaining == 0:
+                        # 両方のチャンクが無音かどうか確認
+                        if not np.any(vocal_data) and not np.any(inst_data):
+                            logging.info("処理完了：両方の音声ストリームが終了")
+                            break
+                    
+                    # ミックス処理
+                    mixed_chunk = mix_audio_chunks(vocal_data, inst_data, vocal_ratio, inst_ratio)
+                    
+                    # 出力ファイルに書き込み
+                    if np.any(mixed_chunk):
+                        sf_out.write(mixed_chunk)
+        
+        # 一時ファイルを最終出力ファイルに移動
+        shutil.move(temp_path, output_path)
+        logging.info(f"音声ミックス完了: {output_path}")
+        
+    except Exception as e:
+        logging.error(f"音声処理中にエラーが発生: {e}")
+        # 一時ファイルのクリーンアップ
+        if temp_path and os.path.exists(temp_path):
+            os.unlink(temp_path)
+        raise
+
+
+def process_audio_chunk(sf_file, delay_remaining, file_ended):
+    """
+    音声チャンクを処理する関数
+    
+    Args:
+        sf_file: SoundFileオブジェクト
+        delay_remaining: 残りの遅延サンプル数
+        file_ended: ファイル終了フラグ
+    
+    Returns:
+        tuple: (音声データ, 更新された遅延サンプル数, 更新されたファイル終了フラグ)
+    """
+    # チャンクを無音で初期化
+    chunk = np.zeros((CHUNK_SIZE, 2), dtype='float32')
+    
+    # 遅延処理
+    if delay_remaining > 0:
+        padding_size = min(delay_remaining, CHUNK_SIZE)
+        delay_remaining -= padding_size
+        frames_to_read = CHUNK_SIZE - padding_size
+        start_index = padding_size
+    else:
+        frames_to_read = CHUNK_SIZE
+        start_index = 0
+    
+    # ファイルからデータを読み込み
+    if frames_to_read > 0 and not file_ended:
+        try:
+            audio_data = sf_file.read(frames_to_read, dtype='float32')
+            
+            if len(audio_data) == 0:
+                file_ended = True
+            else:
+                # モノラルをステレオに変換
+                if audio_data.ndim == 1:
+                    audio_data = np.stack([audio_data, audio_data], axis=1)
+                
+                # 安全な範囲でデータをコピー
+                end_index = min(start_index + len(audio_data), CHUNK_SIZE)
+                actual_length = end_index - start_index
+                
+                if actual_length > 0:
+                    chunk[start_index:end_index] = audio_data[:actual_length]
+                
+                # ファイル終端の確認
+                if len(audio_data) < frames_to_read:
+                    file_ended = True
+                    
+        except Exception as e:
+            logging.error(f"音声データ読み込みエラー: {e}")
+            file_ended = True
+    
+    return chunk, delay_remaining, file_ended
+
+
+def mix_audio_chunks(vocal_chunk, inst_chunk, vocal_ratio, inst_ratio):
+    """
+    音声チャンクをミックスする関数
+    
+    Args:
+        vocal_chunk: ボーカル音声チャンク
+        inst_chunk: インストゥルメンタル音声チャンク
+        vocal_ratio: ボーカルの音量比率
+        inst_ratio: インストゥルメンタルの音量比率
+    
+    Returns:
+        numpy.ndarray: ミックスされた音声チャンク
+    """
+    # クリッピング防止のため0.5を掛ける
+    mixed = 0.5 * (vocal_chunk * vocal_ratio + inst_chunk * inst_ratio)
+    
+    # クリッピング防止（-1.0 ~ 1.0の範囲に制限）
+    mixed = np.clip(mixed, -1.0, 1.0)
+    
+    return mixed 
