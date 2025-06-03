@@ -181,10 +181,13 @@ def normalize_audio(audio_path, target_level):
         temp_path = tmp.name
 
     with sf.SoundFile(audio_path) as sf_in,\
-         sf.SoundFile(temp_path, mode='w', samplerate=sf_in.samplerate, channels=sf_in.channels, format=sf_in.format) as sf_out:
+         sf.SoundFile(temp_path, mode='w', samplerate=sf_in.samplerate, channels=1, format=sf_in.format) as sf_out:
          
         while True :
             chunk = sf_in.read(CHUNK_SIZE, dtype='float32')
+            if chunk.ndim == 2:
+                chunk = chunk[:, 0]
+                
             if len(chunk) == 0:
                 break
                 
@@ -224,7 +227,7 @@ def reverb_audio(audio_path, fs, decay, delay_ms, repeats, mix):
         
     with sf.SoundFile(audio_path) as sf_in, \
          sf.SoundFile(temp_path, mode='w', samplerate=sf_in.samplerate, 
-                     channels=sf_in.channels, format=sf_in.format) as sf_out:
+                     channels=1, format=sf_in.format) as sf_out:
         
         while True:
             chunk = sf_in.read(CHUNK_SIZE, dtype='float32')
@@ -295,7 +298,7 @@ def delay_audio(audio_path, fs, delay_ms, feedback, mix) :
         
     with sf.SoundFile(audio_path) as sf_in, \
          sf.SoundFile(temp_path, mode='w', samplerate=sf_in.samplerate, 
-                     channels=sf_in.channels, format=sf_in.format) as sf_out:
+                     channels=1, format=sf_in.format) as sf_out:
         
         while True:
             chunk = sf_in.read(CHUNK_SIZE, dtype='float32')
