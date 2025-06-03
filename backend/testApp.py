@@ -56,12 +56,12 @@ def compressor_envelope(audio_path, threshold_db, ratio, attack_ms, release_ms, 
     prev_smoothed_gain = 1.0
         
     with sf.SoundFile(audio_path) as sf_in,\
-         sf.SoundFile(temp_path, mode='w', samplerate=sf_in.samplerate, channels=sf_in.channels, format=sf_in.format) as sf_out:
+         sf.SoundFile(temp_path, mode='w', samplerate=sf_in.samplerate, channels=1, format=sf_in.format) as sf_out:
          
         while True :
             chunk = sf_in.read(CHUNK_SIZE, dtype='float32')
             if chunk.ndim == 2:
-                chunk = chunk[:, 0]
+                chunk = chunk[:, 0] #モノラルに変換
 
             if len(chunk) == 0:
                 break
@@ -476,7 +476,7 @@ def process_audio_advanced(input_path, output_path,
         apply_compressor(threshold_db, ratio, attack_ms, release_ms, fs, knee_db),
         apply_normalize(normalize_level_db),
         #apply_reverb(fs, decay=1, delay_ms=1, repeats=2, mix=0.2),
-        apply_reverb(fs, decay=0.5, delay_ms=50, repeats=4, mix=0.3),
+        apply_reverb(fs, decay=0.3, delay_ms=50, repeats=3, mix=0.3),
         #apply_delay(fs, delay_ms=200, feedback=0.25, mix=0.4),
     ]
     """
