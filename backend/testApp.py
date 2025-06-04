@@ -26,7 +26,7 @@ def get_peak(input_path):
             else:
                 data = chunk
             peak = max(peak, np.max(np.abs(data))) #保存されているpeakとchunk内の最大値を比較し、大きい方をpeakに保存する   
-    logging.info("peakを計測したよ")
+    logging.info('peak = {}'.format(peak))
     return peak    
 
 def db_to_linear(db):
@@ -164,13 +164,12 @@ def compressor_envelope(audio_path, threshold_db, ratio, attack_ms, release_ms, 
 
 """   
 
-def normalize_audio(audio_path, target_level):
+def normalize_audio(audio_path, target_amplitude):
     """ピークをtarget_level(dB)にノーマライズ"""
     """audio_pathのデータを読み込んで、tempファイルに処理後のデータを書き出し。そのあとtempファイルをaudio_pathに上書き"""
 
     logging.info("ピークを得ようとするよ")
     peak = get_peak(audio_path)
-    target_linear = db_to_linear(target_level)
 
     if peak == 0:
         print("音声にピークがないので処理をスキップしました")
@@ -191,7 +190,7 @@ def normalize_audio(audio_path, target_level):
             if len(chunk) == 0:
                 break
                 
-            chunk_normalized = chunk * (target_linear / peak)  
+            chunk_normalized = chunk * (target_amplitude / peak)  
 
             sf_out.write(chunk_normalized)  
     
@@ -340,10 +339,10 @@ def apply_compressor(threshold_db, ratio, attack_ms, release_ms, fs, knee_db):
         return compressor_envelope(audio_path, threshold_db, ratio, attack_ms, release_ms, fs, knee_db)
     return processor
 
-def apply_normalize(normalize_level_db):
+def apply_normalize(normalize_level):
     def processor(audio_path):
         logging.info("ノーマライズを開始するよ")
-        return normalize_audio(audio_path, normalize_level_db)
+        return normalize_audio(audio_path, normalize_level)
     return processor
 
 def apply_reverb(fs, decay, delay_ms, repeats, mix):
@@ -382,7 +381,7 @@ def read_and_downsample(file_path, target_points):
     
     return data
 
-def create_graph(input_path, processed_path, graph_path, target_points=10000) :
+def create_graph(input_path, processed_path, graph_path, target_points) :
         # ファイル情報を取得
     with sf.SoundFile(input_path) as sf_in:
         total_frames = sf_in.frames
@@ -439,16 +438,8 @@ def create_graph(input_path, processed_path, graph_path, target_points=10000) :
 def process_audio_advanced(input_path, output_path,
                            threshold_db, ratio,
                            attack_ms, release_ms,
-                           knee_db, normalize_level_db):
+                           knee_db, normalize_level):
 
-    # init16型を正規化(最大値32768で割る)
-    #data = data.astype(np.float32) / 32768.0
-
-    # コンプレッサー処理
-    #compressed = compressor_envelope(data, threshold_db, ratio, attack_ms, release_ms, fs, knee_db)
-
-    # ノーマライズ
-    #normalized = normalize_audio(compressed, normalize_level_db)
     logging.info("音声処理に入った")
 
     PROCESSING = "processing"
@@ -456,35 +447,26 @@ def process_audio_advanced(input_path, output_path,
 
     processing_path = os.path.join(PROCESSING,os.path.basename(input_path))
 
-    """
-    dst_dir = os.path.dirname(first_path)  # コピー先のディレクトリ
 
-    if not os.path.exists(dst_dir):
-        os.makedirs(dst_dir)  # コピー先のディレクトリがなければ作る
-    """    
 
     shutil.copyfile(input_path, processing_path) #元データをpricessing_pathにコピー
 
 
     # 元データ読み込み(サンプリングレート取得用)
     data,fs = sf.read(input_path)
- 
-
 
     
     logging.info("処理プロセス"),
     processing_steps = [
-        apply_normalize(normalize_level_db),  
+        apply_normalize(normalize_level),  
         apply_compressor(threshold_db, ratio, attack_ms, release_ms, fs, knee_db),
         apply_compressor(threshold_db, ratio, attack_ms, release_ms, fs, knee_db),
-        apply_normalize(normalize_level_db),
+        apply_normalize(normalize_level),
         #apply_reverb(fs, decay=1, delay_ms=1, repeats=2, mix=0.2),
         apply_reverb(fs, decay=0.3, delay_ms=50, repeats=3, mix=0.3),
         #apply_delay(fs, delay_ms=200, feedback=0.25, mix=0.4),
     ]
-    """
-    processed = apply_processing_chain(input_path, processing_steps)
-    """
+
     processed_path = apply_processing_chain(processing_path, processing_steps)
 
     logging.info("処理終了")
@@ -519,29 +501,8 @@ def process_audio_advanced(input_path, output_path,
         input_path, 
         output_path, 
         graph_path,
-        target_points=1000,  # 1万ポイントに削減(ダウンサンプリング)
+        target_points=5000,  # 5000ポイントに削減(ダウンサンプリング)
     )
-
-    """
-    time = np.linspace(0, len(data) / fs, num=len(data))
-
-    plt.figure(figsize=(6, 3))
-    plt.subplot(2, 1, 1)
-    plt.plot(time, data)
-    plt.title("Original Waveform")
-    plt.xlabel("Time [s]")
-    plt.ylabel("Amplitude")
-
-    plt.subplot(2, 1, 2)
-    plt.plot(time, processed)
-    plt.title("Processed Waveform")
-    plt.xlabel("Time [s]")
-    plt.ylabel("Amplitude")
-
-    plt.tight_layout()
-    plt.savefig(graph_path)
-    plt.close()
-    """
     
     return graph_filename
 
