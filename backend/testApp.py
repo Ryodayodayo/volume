@@ -117,52 +117,7 @@ def compressor_envelope(audio_path, threshold_db, ratio, attack_ms, release_ms, 
 
     return audio_path
 
-"""
 
-    # 入力信号の絶対値をdBに変換
-    abs_db = linear_to_db(np.abs(data))
-
-    # ゲイン計算用の配列初期化
-    gain_reduction_db = np.zeros_like(abs_db)
-
-    # スレッショルド周辺のソフトニー処理
-    knee_start = threshold_db - knee_db / 2
-    knee_end = threshold_db + knee_db / 2
-
-    for i, level_db in enumerate(abs_db):
-        if level_db < knee_start:
-            gain_reduction_db[i] = 0  # スレッショルド以下は無圧縮
-        elif level_db > knee_end:
-            gain_reduction_db[i] = threshold_db + (level_db - threshold_db) / ratio - level_db
-        else:
-            # ソフトニー内はスムーズに減衰量を補間
-            # 圧縮量 = x として線形補間（2次曲線で滑らかにしても良い）
-            x = (level_db - knee_start) / knee_db
-            compressed_db = threshold_db + (level_db - threshold_db) / ratio
-            gain_reduction_db[i] = (1 - x) * 0 + x * (compressed_db - level_db)
-
-    # ゲインをリニアに戻す
-    target_gain = db_to_linear(gain_reduction_db)
-
-    # アタック・リリースの係数計算
-    attack_coef = np.exp(-1.0 / (attack_ms * 0.001 * fs))
-    release_coef = np.exp(-1.0 / (release_ms * 0.001 * fs))
-
-    smoothed_gain = np.zeros_like(target_gain)
-    smoothed_gain[0] = target_gain[0]
-
-    for i in range(1, len(target_gain)):
-        if target_gain[i] < smoothed_gain[i-1]:
-            smoothed_gain[i] = attack_coef * smoothed_gain[i-1] + (1 - attack_coef) * target_gain[i]
-        else:
-            smoothed_gain[i] = release_coef * smoothed_gain[i-1] + (1 - release_coef) * target_gain[i]
-
-    # 入力信号にスムーズ化したゲインをかけて圧縮完了
-    output = data * smoothed_gain
-
-    return output
-
-"""   
 
 def normalize_audio(audio_path, target_amplitude):
     """ピークをtarget_level(dB)にノーマライズ"""
@@ -463,7 +418,7 @@ def process_audio_advanced(input_path, output_path,
         apply_compressor(threshold_db, ratio, attack_ms, release_ms, fs, knee_db),
         apply_normalize(normalize_level),
         #apply_reverb(fs, decay=1, delay_ms=1, repeats=2, mix=0.2),
-        apply_reverb(fs, decay=0.3, delay_ms=50, repeats=3, mix=0.3),
+        apply_reverb(fs, decay=0.3, delay_ms=80, repeats=3, mix=0.4),
         #apply_delay(fs, delay_ms=200, feedback=0.25, mix=0.4),
     ]
 
