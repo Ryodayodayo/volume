@@ -568,6 +568,8 @@ def process_mix_audio(inst_path, vocal_path, output_path, vocal_ratio, inst_rati
                     if np.any(mixed_chunk):
                         sf_out.write(mixed_chunk)
         
+        normalize_audio(temp_path ,0.7)
+
         # 一時ファイルを最終出力ファイルに移動
         shutil.move(temp_path, output_path)
         logging.info(f"音声ミックス完了: {output_path}")

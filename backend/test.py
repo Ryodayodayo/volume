@@ -81,9 +81,9 @@ def test_upload():
 
     return jsonify({ 
         "vocal" : {
-            "filename": vocal.filename,
+            "filename": output_vocal_filename,
             "file_url": vocal_file_url,
-            "file_path" : vocal_filepath,
+            "file_path" : output_vocal_path,
             "image_url" : image_url,
             "previous_file_url": previous_vocal_file_url
         },
