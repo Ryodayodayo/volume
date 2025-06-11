@@ -8,9 +8,9 @@ function UploadForm () {
 
   const [vocal, setVocal] = useState();
   const [audio, setAudio] = useState();
-  const [normalize, setNormalize] = useState(0.5);
+  const [normalize, setNormalize] = useState(0.7);
   const [ratio, setRatio] = useState(4);
-  const [threshold, setThreshold] = useState(-20);
+  const [threshold, setThreshold] = useState(-30);
   const [attack, setAttack] = useState(10);
   const [release, setRelease] = useState(100);
   const [loading, setLoading] = useState(false);
@@ -72,6 +72,7 @@ function UploadForm () {
 
   return (
     <div className="upload-form">
+      <h1 className = "h1">MIXパラメータ ※分からなかったらそのままでもいい感じになります</h1>
       <form onSubmit={handleSubmit}>
         <label>ノーマライズ : {normalize} 
           <input type="range" min="0.0" max="1.0" step="0.01" value={normalize??0.5} onChange={(e) => setNormalize(e.target.value)}/>

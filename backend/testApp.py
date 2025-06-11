@@ -418,8 +418,8 @@ def process_audio_advanced(input_path, output_path,
         apply_compressor(threshold_db, ratio, attack_ms, release_ms, fs, knee_db),
         apply_normalize(normalize_level),
         #apply_reverb(fs, decay=1, delay_ms=1, repeats=2, mix=0.2),
-        apply_reverb(fs, decay=0.3, delay_ms=80, repeats=3, mix=0.4),
-        #apply_delay(fs, delay_ms=200, feedback=0.25, mix=0.4),
+        apply_reverb(fs, decay=0.2, delay_ms=50, repeats=3, mix=0.3),
+        apply_delay(fs, delay_ms=200, feedback=0.25, mix=0.3),
     ]
 
     processed_path = apply_processing_chain(processing_path, processing_steps)
